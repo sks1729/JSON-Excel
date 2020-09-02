@@ -195,7 +195,7 @@ class Main:
             self.json_files.pop(file_name)
             self.json_list_box.delete(index)
         if len(self.json_files) == 0:
-            self.json_convert_button["state"] = tk.DISABLED
+            self.reset_json()
 
     def clear_excel(self):
         for index in reversed(self.excel_list_box.curselection()):
@@ -203,11 +203,14 @@ class Main:
             self.excel_files.pop(file_name)
             self.excel_list_box.delete(index)
         if len(self.excel_files) == 0:
-            self.excel_convert_button["state"] = tk.DISABLED
+            self.reset_excel()
 
     def reset_json(self):
         self.json_list_box.delete(0, tk.END)
         self.json_convert_button["state"] = tk.DISABLED
+        self.correct_col_name = ""
+        self.json_col_entry.delete(0, tk.END)
+        self.json_enter_col["state"] = tk.DISABLED
         self.json_files = {}
 
     def reset_excel(self):
@@ -221,7 +224,7 @@ class Main:
         resp = requests.get(url=url)
         df = json_normalize(resp.json())
         excel_file_name = self.download_folder + "\\" + url.split("/")[-1].replace(".json", ".xlsx")
-        df.to_excel(excel_file_name)
+        df.to_excel(excel_file_name, index=False)
         os.startfile(self.download_folder)
 
     def column(self):
@@ -287,7 +290,8 @@ class Main:
             for file in self.excel_files.values():
                 full_file_path = self.download_folder + "\\" + str(file).split("/")[-1].replace(".xlsx", ".json") \
                     .replace(".xls", ".json")
-                pd.read_excel(file).to_json(full_file_path)
+                df = pd.read_excel(file)
+                df.to_json(full_file_path)
             os.startfile(self.download_folder)
         except:
             messagebox.askretrycancel("Conversion not possible", "Try again")
