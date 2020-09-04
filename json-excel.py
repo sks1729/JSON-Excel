@@ -19,6 +19,7 @@ class Main:
         self.master.title("JSON ↔ Excel converter")
         self.master.iconbitmap("joker.ico")
         self.master.option_add('*Dialog.msg.font', 'Helvetica 12')
+        self.master.resizable(False, False)
 
         style = ttk.Style()
         style.theme_create("TabStyle", parent="classic", settings={
@@ -118,7 +119,7 @@ class Main:
         self.json_enter_col.grid(row=3, column=0, padx=11, sticky=tk.W)
 
         self.json_col_entry = tk.Entry(self.json_second_frame, font="Helvetica 12 bold")
-        self.json_col_entry.grid(row=4, column=0, padx=11, pady=(8, 10), sticky=tk.W)
+        self.json_col_entry.grid(row=4, column=0, padx=11, pady=(8, 13), sticky=tk.W)
 
         self.json_add_button = tk.Button(self.json_first_frame, image=self.add_image, bd=0, command=self.add_jsons)
         self.json_add_button.grid(row=2, column=0, sticky=tk.W, padx=10)
@@ -239,13 +240,16 @@ class Main:
         self.excel_files = {}
 
     def json_use_url(self):
-        url = self.json_url_entry.get()
-        self.json_url_entry.delete(0, tk.END)
-        resp = requests.get(url=url)
-        df = json_normalize(resp.json())
-        excel_file_name = self.download_folder + "\\" + url.split("/")[-1].replace(".json", ".xlsx")
-        df.to_excel(excel_file_name, index=False)
-        os.startfile(self.download_folder)
+        try:
+            url = self.json_url_entry.get()
+            self.json_url_entry.delete(0, tk.END)
+            resp = requests.get(url=url)
+            df = json_normalize(resp.json())
+            excel_file_name = self.download_folder + "\\" + url.split("/")[-1].replace(".json", ".xlsx")
+            df.to_excel(excel_file_name, index=False)
+            os.startfile(self.download_folder)
+        except:
+            messagebox.askretrycancel("Invalid URL", "Enter a valid URL")
 
     def column(self):
         self.entered_col_name = self.json_col_entry.get().strip()
@@ -256,8 +260,7 @@ class Main:
             try:
                 for file in self.json_files.values():
                     data = json.load(open(file))
-                    df = pd.DataFrame(data)
-                    # df[self.entered_col_name]
+                    pd.DataFrame(data[self.entered_col_name])
             except:
                 messagebox.askretrycancel("Invalid column name", "Enter a valid column name")
                 self.correct_col_name = ""
@@ -291,22 +294,22 @@ class Main:
             self.excel_convert_button["state"] = tk.NORMAL
 
     def convert_json(self):
-        # try:
-        if self.correct_col_name != "":
-            for file in self.json_files.values():
-                full_file_path = self.download_folder + "\\" + str(file).split("/")[-1].replace(".json", ".xlsx")
-                data = json.load(open(file))
-                df = pd.DataFrame(data[str(self.correct_col_name)])
-                df.to_excel(full_file_path)
-        else:
-            for file in self.json_files.values():
-                full_file_path = self.download_folder + "\\" + str(file).split("/")[-1].replace(".json", ".xlsx")
-                data = json.load(open(file))
-                df = pd.DataFrame(data)
-                df.to_excel(full_file_path, index=False)
-        os.startfile(self.download_folder)
-        # except:
-        #     messagebox.askretrycancel("Conversion not possible", "Enter valid column name")
+        try:
+            if self.correct_col_name != "":
+                for file in self.json_files.values():
+                    full_file_path = self.download_folder + "\\" + str(file).split("/")[-1].replace(".json", ".xlsx")
+                    data = json.load(open(file))
+                    df = pd.DataFrame(data[str(self.correct_col_name)])
+                    df.to_excel(full_file_path)
+            else:
+                for file in self.json_files.values():
+                    full_file_path = self.download_folder + "\\" + str(file).split("/")[-1].replace(".json", ".xlsx")
+                    data = json.load(open(file))
+                    df = pd.DataFrame(data)
+                    df.to_excel(full_file_path, index=False)
+            os.startfile(self.download_folder)
+        except:
+            messagebox.askretrycancel("Conversion not possible", "Enter valid column name")
 
     def prettify_json(self, f_names):
         for f in f_names:
@@ -320,51 +323,51 @@ class Main:
         self.row_json_check["state"] = tk.DISABLED
         self.pretty_check["state"] = tk.DISABLED
         self.sheets_check["state"] = tk.DISABLED
-        # try:
-        if self.rows2json.get() == "on":
-            file_names = []
-            for file in self.excel_files.values():
-                if self.multi_sheet.get() == "on":
-                    for sheet in pd.ExcelFile(file).sheet_names:
-                        df = pd.ExcelFile(file).parse(sheet)
+        try:
+            if self.rows2json.get() == "on":
+                file_names = []
+                for file in self.excel_files.values():
+                    if self.multi_sheet.get() == "on":
+                        for sheet in pd.ExcelFile(file).sheet_names:
+                            df = pd.ExcelFile(file).parse(sheet)
+                            for i in list(df.head().index):
+                                extension_replace = str(file).split("/")[-1].replace(".xlsx", "").replace(".xls", "")
+                                full_file_path = f"{self.download_folder}\\{extension_replace} {sheet} Row index {i}.json"
+                                file_names.append(full_file_path)
+                                data = df.iloc[i]
+                                data.to_json(full_file_path)
+                    else:
+                        df = pd.read_excel(file)
                         for i in list(df.head().index):
                             extension_replace = str(file).split("/")[-1].replace(".xlsx", "").replace(".xls", "")
-                            full_file_path = f"{self.download_folder}\\{extension_replace} {sheet} Row index {i}.json"
+                            full_file_path = f"{self.download_folder}\\{extension_replace} Row index {i}.json"
                             file_names.append(full_file_path)
                             data = df.iloc[i]
                             data.to_json(full_file_path)
-                else:
-                    df = pd.read_excel(file)
-                    for i in list(df.head().index):
+                if self.pretty_json.get() == "on":
+                    self.prettify_json(file_names)
+            else:
+                file_names = []
+                for file in self.excel_files.values():
+                    if self.multi_sheet.get() == "on":
+                        for sheet in pd.ExcelFile(file).sheet_names:
+                            extension_replace = str(file).split("/")[-1].replace(".xlsx", "").replace(".xls", "")
+                            full_file_path = f"{self.download_folder}\\{extension_replace} {sheet}.json"
+                            file_names.append(full_file_path)
+                            pd.ExcelFile(file).parse(sheet).to_json(full_file_path, orient="records")
+                    else:
                         extension_replace = str(file).split("/")[-1].replace(".xlsx", "").replace(".xls", "")
-                        full_file_path = f"{self.download_folder}\\{extension_replace} Row index {i}.json"
+                        full_file_path = f"{self.download_folder}\\{extension_replace}.json"
                         file_names.append(full_file_path)
-                        data = df.iloc[i]
-                        data.to_json(full_file_path)
-            if self.pretty_json.get() == "on":
-                self.prettify_json(file_names)
-        else:
-            file_names = []
-            for file in self.excel_files.values():
-                if self.multi_sheet.get() == "on":
-                    for sheet in pd.ExcelFile(file).sheet_names:
-                        extension_replace = str(file).split("/")[-1].replace(".xlsx", "").replace(".xls", "")
-                        full_file_path = f"{self.download_folder}\\{extension_replace} {sheet}.json"
-                        file_names.append(full_file_path)
-                        pd.ExcelFile(file).parse(sheet).to_json(full_file_path, orient="records")
-                else:
-                    extension_replace = str(file).split("/")[-1].replace(".xlsx", "").replace(".xls", "")
-                    full_file_path = f"{self.download_folder}\\{extension_replace}.json"
-                    file_names.append(full_file_path)
-                    pd.read_excel(file).to_json(full_file_path, orient="records")
-            if self.pretty_json.get() == "on":
-                self.prettify_json(file_names)
-        self.row_json_check["state"] = tk.NORMAL
-        self.pretty_check["state"] = tk.NORMAL
-        self.sheets_check["state"] = tk.NORMAL
-        os.startfile(self.download_folder)
-        # except:
-        #     messagebox.askretrycancel("Conversion not possible", "Try again")
+                        pd.read_excel(file).to_json(full_file_path, orient="records")
+                if self.pretty_json.get() == "on":
+                    self.prettify_json(file_names)
+            self.row_json_check["state"] = tk.NORMAL
+            self.pretty_check["state"] = tk.NORMAL
+            self.sheets_check["state"] = tk.NORMAL
+            os.startfile(self.download_folder)
+        except:
+            messagebox.askretrycancel("Conversion not possible", "Try again")
 
 
 if __name__ == '__main__':
