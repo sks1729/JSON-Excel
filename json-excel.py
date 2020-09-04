@@ -128,19 +128,23 @@ class Main:
                                              command=self.convert_json)
         self.json_convert_button.grid(row=2, column=1, padx=10, sticky=tk.E)
 
+        self.pretty_json_btn = tk.Button(self.json_first_frame, text="Beautify JSON", font=self.widgets_font,
+                                         state=tk.DISABLED, bg="#d8d3cd")
+        self.pretty_json_btn.grid(row=3, column=1, padx=15, pady=(10, 0), sticky=tk.E)
+
         self.json_url_label = tk.Label(self.json_first_frame, text="Use URL", font=self.widgets_font, bg="#d8d3cd")
-        self.json_url_label.grid(row=3, column=0, padx=10, pady=(40, 5), sticky=tk.W)
+        self.json_url_label.grid(row=4, column=0, padx=10, pady=(0, 5), sticky=tk.W)
 
         self.json_url_entry = tk.Entry(self.json_first_frame, font=self.widgets_font, relief=tk.RAISED,
                                        highlightbackground="#d8d3cd", highlightthickness=3)
-        self.json_url_entry.grid(row=4, column=0, padx=10)
+        self.json_url_entry.grid(row=5, column=0, padx=10)
 
         self.json_url_entry_button = tk.Button(self.json_first_frame, text="Add URL", font=self.widgets_font,
                                                command=self.json_use_url, relief=tk.RAISED, bg="#d8d3cd")
-        self.json_url_entry_button.grid(row=4, column=1, padx=10, sticky=tk.W)
+        self.json_url_entry_button.grid(row=5, column=1, padx=10, sticky=tk.W)
 
         self.json_footer_label = tk.Label(self.json_first_frame, text=self.footer, font=self.widgets_font, bg="#d8d3cd")
-        self.json_footer_label.grid(row=5, column=0, padx=10, pady=(20, 10), columnspan=2, sticky=tk.W)
+        self.json_footer_label.grid(row=6, column=0, padx=10, pady=10, columnspan=2, sticky=tk.W)
 
     def excel_json_widgets(self):
         self.excel_first_frame = tk.Frame(self.tab2, highlightbackground="#272121", highlightthickness=3)
@@ -168,17 +172,17 @@ class Main:
         self.row_json_check.deselect()
         self.row_json_check.grid(row=3, column=0, pady=10, padx=10, sticky=tk.W)
 
-        self.multi_sheet = tk.StringVar()
-        self.sheets_check = tk.Checkbutton(self.excel_first_frame, font=self.widgets_font, text="Multiple sheets",
-                                           variable=self.multi_sheet, onvalue="on", offvalue="off", bg="#d8d3cd")
-        self.sheets_check.deselect()
-        self.sheets_check.grid(row=4, column=0, padx=10, sticky=tk.W)
-
         self.pretty_json = tk.StringVar()
         self.pretty_check = tk.Checkbutton(self.excel_first_frame, font=self.widgets_font, text="Beautify JSON",
                                            variable=self.pretty_json, onvalue="on", offvalue="off", bg="#d8d3cd")
         self.pretty_check.deselect()
         self.pretty_check.grid(row=3, column=1, pady=10, padx=10, sticky=tk.E)
+
+        self.multi_sheet = tk.StringVar()
+        self.sheets_check = tk.Checkbutton(self.excel_first_frame, font=self.widgets_font, text="Multiple sheets",
+                                           variable=self.multi_sheet, onvalue="on", offvalue="off", bg="#d8d3cd")
+        self.sheets_check.deselect()
+        self.sheets_check.grid(row=4, column=0, padx=10, sticky=tk.W)
 
         self.excel_footer_label = tk.Label(self.excel_first_frame, text=self.excel_footer, font=self.widgets_font,
                                            bg="#d8d3cd")
@@ -226,6 +230,7 @@ class Main:
     def reset_json(self):
         self.json_list_box.delete(0, tk.END)
         self.json_convert_button["state"] = tk.DISABLED
+        self.pretty_json_btn["state"] = tk.DISABLED
         self.correct_col_name = ""
         self.json_col_entry.delete(0, tk.END)
         self.json_enter_col["state"] = tk.DISABLED
@@ -280,6 +285,8 @@ class Main:
         if len(self.json_files) > 0:
             self.json_convert_button["state"] = tk.NORMAL
             self.json_enter_col["state"] = tk.NORMAL
+            self.pretty_json_btn["state"] = tk.NORMAL
+            self.pretty_json_btn["command"] = lambda: self.prettify_json(self.json_files.values())
 
     def add_excel(self):
         self.files = filedialog.askopenfilenames(initialdir=os.getcwd(), title="Select Excel file(s)",
@@ -306,7 +313,7 @@ class Main:
                     full_file_path = self.download_folder + "\\" + str(file).split("/")[-1].replace(".json", ".xlsx")
                     data = json.load(open(file))
                     df = pd.DataFrame(data)
-                    df.to_excel(full_file_path, index=False)
+                    df.to_excel(full_file_path)
             os.startfile(self.download_folder)
         except:
             messagebox.askretrycancel("Conversion not possible", "Enter valid column name")
@@ -318,6 +325,8 @@ class Main:
             formatted_json = json.dumps(json_object, indent=3)
             file_object.seek(0)
             file_object.write(formatted_json)
+        if self.notebook.index("current") == 0:
+            os.startfile(self.download_folder)
 
     def convert_excel(self):
         self.row_json_check["state"] = tk.DISABLED
@@ -362,12 +371,12 @@ class Main:
                         pd.read_excel(file).to_json(full_file_path, orient="records")
                 if self.pretty_json.get() == "on":
                     self.prettify_json(file_names)
-            self.row_json_check["state"] = tk.NORMAL
-            self.pretty_check["state"] = tk.NORMAL
-            self.sheets_check["state"] = tk.NORMAL
             os.startfile(self.download_folder)
         except:
             messagebox.askretrycancel("Conversion not possible", "Try again")
+        self.row_json_check["state"] = tk.NORMAL
+        self.pretty_check["state"] = tk.NORMAL
+        self.sheets_check["state"] = tk.NORMAL
 
 
 if __name__ == '__main__':
