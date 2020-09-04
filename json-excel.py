@@ -128,9 +128,13 @@ class Main:
                                              command=self.convert_json)
         self.json_convert_button.grid(row=2, column=1, padx=10, sticky=tk.E)
 
+        self.miny_json_btn = tk.Button(self.json_first_frame, text="Minify JSON", font=self.widgets_font,
+                                       state=tk.DISABLED, bg="#d8d3cd")
+        self.miny_json_btn.grid(row=3, column=0, pady=(10, 0), sticky=tk.E)
+
         self.pretty_json_btn = tk.Button(self.json_first_frame, text="Beautify JSON", font=self.widgets_font,
                                          state=tk.DISABLED, bg="#d8d3cd")
-        self.pretty_json_btn.grid(row=3, column=1, padx=15, pady=(10, 0), sticky=tk.E)
+        self.pretty_json_btn.grid(row=3, column=1, padx=(0, 15), pady=(10, 0), sticky=tk.E)
 
         self.json_url_label = tk.Label(self.json_first_frame, text="Use URL", font=self.widgets_font, bg="#d8d3cd")
         self.json_url_label.grid(row=4, column=0, padx=10, pady=(0, 5), sticky=tk.W)
@@ -231,6 +235,7 @@ class Main:
         self.json_list_box.delete(0, tk.END)
         self.json_convert_button["state"] = tk.DISABLED
         self.pretty_json_btn["state"] = tk.DISABLED
+        self.miny_json_btn["state"] = tk.DISABLED
         self.correct_col_name = ""
         self.json_col_entry.delete(0, tk.END)
         self.json_enter_col["state"] = tk.DISABLED
@@ -286,7 +291,9 @@ class Main:
             self.json_convert_button["state"] = tk.NORMAL
             self.json_enter_col["state"] = tk.NORMAL
             self.pretty_json_btn["state"] = tk.NORMAL
+            self.miny_json_btn["state"] = tk.NORMAL
             self.pretty_json_btn["command"] = lambda: self.prettify_json(self.json_files.values())
+            self.miny_json_btn["command"] = lambda: self.minify_json(self.json_files.values())
 
     def add_excel(self):
         self.files = filedialog.askopenfilenames(initialdir=os.getcwd(), title="Select Excel file(s)",
@@ -304,27 +311,47 @@ class Main:
         try:
             if self.correct_col_name != "":
                 for file in self.json_files.values():
+                    self.valid_json(file)
                     full_file_path = self.download_folder + "\\" + str(file).split("/")[-1].replace(".json", ".xlsx")
                     data = json.load(open(file))
                     df = pd.DataFrame(data[str(self.correct_col_name)])
-                    df.to_excel(full_file_path)
+                    df.to_excel(full_file_path, index=False)
             else:
                 for file in self.json_files.values():
+                    self.valid_json(file)
                     full_file_path = self.download_folder + "\\" + str(file).split("/")[-1].replace(".json", ".xlsx")
                     data = json.load(open(file))
                     df = pd.DataFrame(data)
-                    df.to_excel(full_file_path)
+                    df.to_excel(full_file_path, index=False)
             os.startfile(self.download_folder)
         except:
             messagebox.askretrycancel("Conversion not possible", "Enter valid column name")
 
+    def valid_json(self, file):
+        r_file = open(file, "r+")
+        first_line = r_file.readline()
+        if first_line.strip().startswith("{"):
+            lines = r_file.readlines()
+            json_str = "".join(lines)
+            json_string = "[{" + json_str + "]"
+            open(file, "w").write(json_string)
+
     def prettify_json(self, f_names):
         for f in f_names:
+            self.valid_json(f)
             file_object = open(f, "r+")
             json_object = json.load(file_object)
             formatted_json = json.dumps(json_object, indent=3)
             file_object.seek(0)
             file_object.write(formatted_json)
+        if self.notebook.index("current") == 0:
+            os.startfile(self.download_folder)
+
+    def minify_json(self, f_names):
+        for f in f_names:
+            json_obj = json.load(open(f, "r+"))
+            formatted_json = json.dumps(json_obj, separators=(",", ":"))
+            open(f, "w").write(formatted_json)
         if self.notebook.index("current") == 0:
             os.startfile(self.download_folder)
 
@@ -371,6 +398,7 @@ class Main:
                         pd.read_excel(file).to_json(full_file_path, orient="records")
                 if self.pretty_json.get() == "on":
                     self.prettify_json(file_names)
+            self.prettify_json(file_names)
             os.startfile(self.download_folder)
         except:
             messagebox.askretrycancel("Conversion not possible", "Try again")
