@@ -330,17 +330,17 @@ class Main:
                     if self.multi_sheet.get() == "on":
                         for sheet in pd.ExcelFile(file).sheet_names:
                             df = pd.ExcelFile(file).parse(sheet)
-                            for i in list(df.head().index):
+                            for i in sorted(list(df.index), reverse=True):
                                 extension_replace = str(file).split("/")[-1].replace(".xlsx", "").replace(".xls", "")
-                                full_file_path = f"{self.download_folder}\\{extension_replace} {sheet} Row index {i}.json"
+                                full_file_path = f"{self.download_folder}\\{extension_replace} {sheet} Record index ({i + 1}).json"
                                 file_names.append(full_file_path)
                                 data = df.iloc[i]
                                 data.to_json(full_file_path)
                     else:
                         df = pd.read_excel(file)
-                        for i in list(df.head().index):
+                        for i in sorted(list(df.index), reverse=True):
                             extension_replace = str(file).split("/")[-1].replace(".xlsx", "").replace(".xls", "")
-                            full_file_path = f"{self.download_folder}\\{extension_replace} Row index {i}.json"
+                            full_file_path = f"{self.download_folder}\\{extension_replace} Record index ({i + 1}).json"
                             file_names.append(full_file_path)
                             data = df.iloc[i]
                             data.to_json(full_file_path)
